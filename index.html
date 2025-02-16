@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Markdown-to-Obsidian Math Converter</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    .container {
+      max-width: 800px; /* for nice readability, but remains responsive */
+      margin: 0 auto;
+    }
+    textarea {
+      width: 100%;
+      height: 150px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+    /* Scrollable area for the output */
+    #output {
+      width: 100%;
+      height: 150px;
+      margin-top: 10px;
+      background-color: #f5f5f5;
+      padding: 10px;
+      box-sizing: border-box;
+      white-space: pre-wrap; /* preserve line breaks */
+      overflow: auto;        /* make it scrollable if overflowing */
+    }
+    .status {
+      margin-left: 10px;
+      font-weight: bold;
+    }
+    button {
+      padding: 6px 12px;
+      margin: 5px 5px 5px 0;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Markdown-to-Obsidian Math Converter</h1>
+
+  <p>This demo replaces LaTeX style <code>\(...\)</code> with <code>$...$</code> and <code>\[...\]</code> with <code>$$...$$</code>. It also checks for balanced <code>$</code> signs and provides a copy button.</p>
+
+  <!-- Text area input -->
+  <label for="markdownInput"><strong>Enter your text with LaTeX math:</strong></label><br/>
+  <textarea id="markdownInput" placeholder="Type or paste your Markdown here..."></textarea>
+  <br/>
+
+  <!-- Convert button -->
+  <button onclick="convertMarkdown()">Convert</button>
+  <!-- Status message (valid/invalid) -->
+  <span id="status" class="status"></span>
+
+  <h3>Converted Output:</h3>
+  <!-- Scrollable output area -->
+  <div id="output"></div>
+
+  <!-- Copy button -->
+  <button onclick="copyOutput()">Copy</button>
+</div>
+
+<script>
+  /**
+   * Convert LaTeX-style math to Obsidian-style math.
+   *  - \[...\]  =>  $$...$$
+   *  - \(...\)  =>  $...$
+   */
+  function convertToObsidianMarkdown(markdown) {
+    let out = markdown;
+
+    // Replace block math \[ ... \] with $$ ... $$
+    // The 's' flag (dotAll) may not be supported in older browsers.
+    out = out.replace(/\\\[(.*?)\\\]/gs, (match, p1) => `$$${p1}$$`);
+
+    // Replace inline math \(...\) with $...$
+    out = out.replace(/\\\((.*?)\\\)/g, (match, p1) => `$${p1}$`);
+
+    return out;
+  }
+
+  /**
+   * Simple check for balanced single- and double-dollar signs.
+   * (Naive approach, does not handle escapes, nested usage, etc.)
+   */
+  function isValidObsidianMath(text) {
+    let inBlockMath = false;   // track if currently inside $$...$$
+    let inInlineMath = false;  // track if currently inside $...$
+
+    let i = 0;
+    while (i < text.length) {
+      // Check for double-dollar sign first
+      if (text.substring(i, i + 2) === '$$') {
+        inBlockMath = !inBlockMath;
+        i += 2;
+      }
+      else if (text.charAt(i) === '$') {
+        inInlineMath = !inInlineMath;
+        i += 1;
+      } else {
+        i += 1;
+      }
+    }
+    // If still inside block or inline math, it's unbalanced
+    return !(inBlockMath || inInlineMath);
+  }
+
+  /**
+   * Main conversion function.
+   */
+  function convertMarkdown() {
+    const markdownInput = document.getElementById('markdownInput').value;
+    const statusEl = document.getElementById('status');
+    const outputEl = document.getElementById('output');
+
+    // 1) Convert to Obsidian math syntax
+    const converted = convertToObsidianMarkdown(markdownInput);
+
+    // 2) Check for balanced $ signs
+    const valid = isValidObsidianMath(converted);
+    statusEl.textContent = valid ? "Valid" : "Invalid";
+    statusEl.style.color = valid ? "green" : "red";
+
+    // 3) Display in output area
+    outputEl.textContent = converted;
+  }
+
+  /**
+   * Copy the content of #output to the clipboard
+   */
+  function copyOutput() {
+    const content = document.getElementById('output').innerText;
+    navigator.clipboard.writeText(content).then(() => {
+      alert("Copied to clipboard!");
+    }, () => {
+      alert("Failed to copy.");
+    });
+  }
+</script>
+</body>
+</html>

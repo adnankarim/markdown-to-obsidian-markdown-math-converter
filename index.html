@@ -9,8 +9,9 @@
       margin: 20px;
     }
     .container {
-      max-width: 800px; /* for nice readability, but remains responsive */
+      max-width: 800px;
       margin: 0 auto;
+      padding: 0 10px;
     }
     textarea {
       width: 100%;
@@ -18,7 +19,7 @@
       margin-bottom: 10px;
       box-sizing: border-box;
     }
-    /* Scrollable area for the output */
+    /* Scrollable output area */
     #output {
       width: 100%;
       height: 150px;
@@ -27,7 +28,7 @@
       padding: 10px;
       box-sizing: border-box;
       white-space: pre-wrap; /* preserve line breaks */
-      overflow: auto;        /* make it scrollable if overflowing */
+      overflow: auto;
     }
     .status {
       margin-left: 10px;
@@ -44,16 +45,19 @@
 <div class="container">
   <h1>Markdown-to-Obsidian Math Converter</h1>
 
-  <p>This demo replaces LaTeX style <code>\(...\)</code> with <code>$...$</code> and <code>\[...\]</code> with <code>$$...$$</code>. It also checks for balanced <code>$</code> signs and provides a copy button.</p>
+  <p>
+    This demo replaces LaTeX style <code>\(...\)</code> with <code>$...$</code> and 
+    <code>\[...\]</code> with <code>$$...$$</code>, removes extra spaces around inline math, 
+    performs a validity check for balanced <code>$</code> signs, and provides a copy button.
+  </p>
 
-  <!-- Text area input -->
+  <!-- Input textarea -->
   <label for="markdownInput"><strong>Enter your text with LaTeX math:</strong></label><br/>
   <textarea id="markdownInput" placeholder="Type or paste your Markdown here..."></textarea>
   <br/>
 
-  <!-- Convert button -->
+  <!-- Convert button and status display -->
   <button onclick="convertMarkdown()">Convert</button>
-  <!-- Status message (valid/invalid) -->
   <span id="status" class="status"></span>
 
   <h3>Converted Output:</h3>
@@ -67,45 +71,50 @@
 <script>
   /**
    * Convert LaTeX-style math to Obsidian-style math.
-   *  - \[...\]  =>  $$...$$
-   *  - \(...\)  =>  $...$
+   *  - Converts block math: \[...\]  =>  $$...$$
+   *  - Converts inline math: \(...\)  =>  $...$
+   *  - Then trims extra spaces inside inline math delimiters.
    */
   function convertToObsidianMarkdown(markdown) {
     let out = markdown;
 
     // Replace block math \[ ... \] with $$ ... $$
-    // The 's' flag (dotAll) may not be supported in older browsers.
+    // The 's' flag enables dotAll mode so that . matches newlines.
     out = out.replace(/\\\[(.*?)\\\]/gs, (match, p1) => `$$${p1}$$`);
 
     // Replace inline math \(...\) with $...$
     out = out.replace(/\\\((.*?)\\\)/g, (match, p1) => `$${p1}$`);
+
+    // Trim extra spaces in inline math (only for single $...$)
+    // Using negative lookbehind/lookahead to ensure not matching $$.
+    out = out.replace(/(?<!\$)\$\s*([^$]+?)\s*\$(?!\$)/g, function(match, content) {
+      return '$' + content.trim() + '$';
+    });
 
     return out;
   }
 
   /**
    * Simple check for balanced single- and double-dollar signs.
-   * (Naive approach, does not handle escapes, nested usage, etc.)
+   * (Naive approach; does not handle escapes, nested usage, etc.)
    */
   function isValidObsidianMath(text) {
-    let inBlockMath = false;   // track if currently inside $$...$$
-    let inInlineMath = false;  // track if currently inside $...$
-
+    let inBlockMath = false;
+    let inInlineMath = false;
     let i = 0;
+
     while (i < text.length) {
       // Check for double-dollar sign first
       if (text.substring(i, i + 2) === '$$') {
         inBlockMath = !inBlockMath;
         i += 2;
-      }
-      else if (text.charAt(i) === '$') {
+      } else if (text.charAt(i) === '$') {
         inInlineMath = !inInlineMath;
         i += 1;
       } else {
         i += 1;
       }
     }
-    // If still inside block or inline math, it's unbalanced
     return !(inBlockMath || inInlineMath);
   }
 
@@ -117,20 +126,20 @@
     const statusEl = document.getElementById('status');
     const outputEl = document.getElementById('output');
 
-    // 1) Convert to Obsidian math syntax
+    // Convert to Obsidian math syntax
     const converted = convertToObsidianMarkdown(markdownInput);
 
-    // 2) Check for balanced $ signs
+    // Check for balanced math markers
     const valid = isValidObsidianMath(converted);
     statusEl.textContent = valid ? "Valid" : "Invalid";
     statusEl.style.color = valid ? "green" : "red";
 
-    // 3) Display in output area
+    // Display in output area
     outputEl.textContent = converted;
   }
 
   /**
-   * Copy the content of #output to the clipboard
+   * Copy the content of the output area to the clipboard.
    */
   function copyOutput() {
     const content = document.getElementById('output').innerText;

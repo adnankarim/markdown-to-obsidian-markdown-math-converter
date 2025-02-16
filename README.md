@@ -1,4 +1,4 @@
-# markdown-to-obsidian-math-converter
+# Markdown to obsidian compatible markdown math converter
 
 This is a simple, responsive web tool that converts LaTeX-style math expressions to Obsidian-compatible math syntax. Specifically, it converts:
 

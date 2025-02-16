@@ -57,4 +57,16 @@ This is block math:
     c & d
   \end{vmatrix} = ad - bc
 \]
+```
+**Output**
+```
+This is inline math: $ e^{i\theta} = \cos \theta + i \sin \theta $.
 
+This is block math:
+$$
+  \begin{vmatrix}
+    a & b \\
+    c & d
+  \end{vmatrix} = ad - bc
+$$
+```
